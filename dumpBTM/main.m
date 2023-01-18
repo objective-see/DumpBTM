@@ -74,17 +74,21 @@ int main(int argc, const char * argv[]) {
         //init
         dbDictionary = [NSMutableDictionary dictionary];
         
+        //dbg msg
+        printf("%s v0.95\nDumps (unserializes) BackgroundItems-v4.btm\n", [[NSProcessInfo.processInfo.arguments.firstObject lastPathComponent] UTF8String]);
+        
         //load database
         // note: this will fail if you don't have full disk access
         dbData = [NSData dataWithContentsOfURL:[[NSURL alloc] initFileURLWithPath:DB_PATH] options:0 error:&error];
         if(nil == dbData)
         {
             //error msg
-            NSLog(@"ERROR: failed to load %@\n\n Do you have Full Disk Access?\n\n", DB_PATH);
+            printf("ERROR: failed to load %s\n\nDo you have Full Disk Access?\n\n", DB_PATH.UTF8String);
             goto bail;
         }
         
-        //NSLog(@"opened %@", DB_PATH);
+        //dbg msg
+        printf("Opened %s\n\n", DB_PATH.UTF8String);
         
         //init unachiver
         keyedUnarchiver = [[NSKeyedUnarchiver alloc] initForReadingFromData:dbData error:&error];

@@ -24,6 +24,7 @@
 
 /* Begin PBXFileReference section */
 		CD5A02232978734E00363786 /* dumpBTM.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dumpBTM.entitlements; sourceTree = "<group>"; };
+		CD5A02242978758B00363786 /* Products */ = {isa = PBXFileReference; lastKnownFileType = text; name = Products; path = DerivedData/dumpBTM/Build/Products; sourceTree = SOURCE_ROOT; };
 		CDCA2852296A748A00944E6D /* dumpBTM */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = dumpBTM; sourceTree = BUILT_PRODUCTS_DIR; };
 		CDCA2855296A748A00944E6D /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -60,6 +61,7 @@
 			children = (
 				CD5A02232978734E00363786 /* dumpBTM.entitlements */,
 				CDCA2855296A748A00944E6D /* main.m */,
+				CD5A02242978758B00363786 /* Products */,
 			);
 			path = dumpBTM;
 			sourceTree = "<group>";
