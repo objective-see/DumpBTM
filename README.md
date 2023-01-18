@@ -54,14 +54,14 @@ This file is a serialized binary propertly list. You can dump it via Apple's `sf
 
 `DumpBTM` is an open-source version of this, which has the following benefits:
 
-* open-source
-* programmatic access to enumerate items in the file 
+* Open-source
+* Programmatic access to enumerate (persistent) items in the file 
 
-The latter point is most notable as this allow you to now add such logic into security/EDR tools. Spefically you can now easily and programmatically enumerate all (ok most) persistent items on a macOS Ventura system (which will include any persistently installed malware). 
+The latter point is most notable as this allow you to now add such logic into security/EDR tools. Specifically you can now easily and programmatically enumerate all (ok most) persistent items on a macOS Ventura system (which will include any persistently installed malware). 
 
 You can also then monitor this file for changes to detect new persistence events (as now you can parse/unserialize its contents via this project's code). 
 
-Note: Such monitoring was supposed to be accomplished via the Endpoint Security `ES_EVENT_TYPE_NOTIFY_BTM_LAUNCH_ITEM_ADD` event ...but this event is broken (See: "[Endpoint Security Event: ES_EVENT_TYPE_NOTIFY_BTM_LAUNCH_ITEM_ADD is ...broken?](https://developer.apple.com/forums/thread/720468)" 😓
+Note: Such monitoring was supposed to be accomplished via the Endpoint Security `ES_EVENT_TYPE_NOTIFY_BTM_LAUNCH_ITEM_ADD` event ...but this event is broken (See: "[Endpoint Security Event: ES_EVENT_TYPE_NOTIFY_BTM_LAUNCH_ITEM_ADD is ...broken?](https://developer.apple.com/forums/thread/720468)" 😓).
 
 
 
