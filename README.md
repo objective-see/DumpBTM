@@ -2,7 +2,10 @@
 tl;dr: an open-source version of `% sfltool dumpbtm`
 
 ```
-% ./dumpBTM
+% ./dumpBTM 
+dumpBTM v0.95
+Dumps (unserializes) BackgroundItems-v4.btm
+Opened /private/var/db/com.apple.backgroundtaskmanagement/BackgroundItems-v4.btm
 
 ========================
  Records for UID 501 : 1CAA5D2B-A526-49E2-9A6F-58CACBDF0AFB
@@ -35,6 +38,15 @@ tl;dr: an open-source version of `% sfltool dumpbtm`
   Assoc. Bundle IDs: [com.adobe.acc.AdobeCreativeCloud]
   Parent Identifier: Adobe Creative Cloud
 ```
+
+Note: If you're running the pre-built binary, though signed, it's not notarized (Apple doesn't support notarized commandline tools). So, after making it executable, remove the quarantine attributue to make it runnable (via Terminal).
+
+```
+% chmod +x dumpBTM
+% xattr -rc dumpBTM
+```
+
+Also, make sure you give Terminal "Full Disk Access" (a requirment to read the `BackgroundItems-v4.btm` file). 
 
 In macOS Ventura (13), Apple consolidated persistent items (login items, launch agents/daemons) in a new file: `BackgroundItems-v4.btm` (found in `/private/var/db/com.apple.backgroundtaskmanagement/`). 
 
