@@ -3,9 +3,10 @@ tl;dr: an open-source version of `% sfltool dumpbtm`
 
 ```
 % ./dumpBTM 
-dumpBTM v0.95
-Dumps (unserializes) BackgroundItems-v4.btm
-Opened /private/var/db/com.apple.backgroundtaskmanagement/BackgroundItems-v4.btm
+Dumps (unserializes) BackgroundItems-v*.btm
+
+Opened /private/var/db/com.apple.backgroundtaskmanagement/BackgroundItems-v7.btm
+...
 
 ========================
  Records for UID 501 : 1CAA5D2B-A526-49E2-9A6F-58CACBDF0AFB
@@ -39,7 +40,7 @@ Opened /private/var/db/com.apple.backgroundtaskmanagement/BackgroundItems-v4.btm
   Parent Identifier: Adobe Creative Cloud
 ```
 
-Note: If you're running the pre-built binary, though signed, it's not notarized (Apple doesn't support notarized commandline tools). So, after making it executable, remove the quarantine attributue to make it runnable (via Terminal).
+Note: If you're running the pre-built binary, though signed, it's not notarized (Apple doesn't support notarized commandline tools). So after making it executable, remove the quarantine attributue to make it runnable (via Terminal).
 
 ```
 % chmod +x dumpBTM
@@ -48,7 +49,7 @@ Note: If you're running the pre-built binary, though signed, it's not notarized 
 
 Also, make sure you give Terminal "Full Disk Access" (a requirment to read the `BackgroundItems-v4.btm` file). 
 
-In macOS Ventura (13), Apple consolidated persistent items (login items, launch agents/daemons) in a new file: `BackgroundItems-v4.btm` (found in `/private/var/db/com.apple.backgroundtaskmanagement/`). 
+In macOS Ventura (13), Apple consolidated persistent items (login items, launch agents/daemons) in a new file: `BackgroundItems-v*.btm`, found in `/private/var/db/com.apple.backgroundtaskmanagement/`. On macOS 13.0 this file is named `BackgroundItems-v*.btm` whereas on macOS 13.1 it's `BackgroundItems-v7.btm`.
 
 This file is a serialized binary propertly list. You can dump it via Apple's `sfltool`, specifying the `dumpbtm` command line flag. 
 
@@ -62,7 +63,3 @@ The latter point is most notable as this allow you to now add such logic into se
 You can also then monitor this file for changes to detect new persistence events (as now you can parse/unserialize its contents via this project's code). 
 
 Note: Such monitoring was supposed to be accomplished via the Endpoint Security `ES_EVENT_TYPE_NOTIFY_BTM_LAUNCH_ITEM_ADD` event ...but this event is broken (See: "[Endpoint Security Event: ES_EVENT_TYPE_NOTIFY_BTM_LAUNCH_ITEM_ADD is ...broken?](https://developer.apple.com/forums/thread/720468)" 😓).
-
-
-
-
