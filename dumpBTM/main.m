@@ -9,9 +9,10 @@
 #import <OpenDirectory/OpenDirectory.h>
 #import <DirectoryService/DirectoryService.h>
 
-#define DB_PATH @"/private/var/db/com.apple.backgroundtaskmanagement/BackgroundItems-v4.btm"
+#define BTM_DIRECTORY @"/private/var/db/com.apple.backgroundtaskmanagement/"
 
 //helper function(s)
+NSURL* getBTMPath(void);
 uid_t uidFromUUID(NSString* uuid);
 
 //Storage obj
@@ -59,6 +60,9 @@ int main(int argc, const char * argv[]) {
         //error
         NSError* error = nil;
         
+        //(btm) path
+        NSURL* path = nil;
+        
         //unarchiver
         NSKeyedUnarchiver* keyedUnarchiver = nil;
         
@@ -75,20 +79,29 @@ int main(int argc, const char * argv[]) {
         dbDictionary = [NSMutableDictionary dictionary];
         
         //dbg msg
-        printf("%s v0.95\nDumps (unserializes) BackgroundItems-v4.btm\n", [[NSProcessInfo.processInfo.arguments.firstObject lastPathComponent] UTF8String]);
+        printf("%s v0.96\nDumps (unserializes) BackgroundItems-v*.btm\n\n", [[NSProcessInfo.processInfo.arguments.firstObject lastPathComponent] UTF8String]);
+        
+        //get btm path
+        path = getBTMPath();
+        if(nil == path)
+        {
+            //error msg
+            printf("ERROR: failed to find a 'btm' file\n...do you have Full Disk Access (FDA)?\n\n");
+            goto bail;
+        }
         
         //load database
         // note: this will fail if you don't have full disk access
-        dbData = [NSData dataWithContentsOfURL:[[NSURL alloc] initFileURLWithPath:DB_PATH] options:0 error:&error];
+        dbData = [NSData dataWithContentsOfURL:path options:0 error:&error];
         if(nil == dbData)
         {
             //error msg
-            printf("ERROR: failed to load %s\n\nDo you have Full Disk Access?\n\n", DB_PATH.UTF8String);
+            printf("ERROR: failed to load %s\n\nDo you have Full Disk Access?\n\n", path.path.UTF8String);
             goto bail;
         }
         
         //dbg msg
-        printf("Opened %s\n\n", DB_PATH.UTF8String);
+        printf("Opened %s\n\n", path.path.UTF8String);
         
         //init unachiver
         keyedUnarchiver = [[NSKeyedUnarchiver alloc] initForReadingFromData:dbData error:&error];
@@ -144,6 +157,44 @@ bail:
     return status;
 }
 
+//get path of BTM file
+// changes between macOS versions, so...
+NSURL* getBTMPath(void)
+{
+    //path
+    NSURL* path = nil;
+    
+    //directory files
+    NSArray* files = nil;
+    
+    //btm files
+    NSArray* btmFiles = nil;
+    
+    //error
+    NSError* error = nil;
+    
+    //load all files in directory
+    files = [NSFileManager.defaultManager contentsOfDirectoryAtURL:[NSURL fileURLWithPath:BTM_DIRECTORY] includingPropertiesForKeys:nil options:0 error:&error];
+    if(nil == files)
+    {
+        //err msg
+        printf("\nERROR: failed to enumerate files in %s\nDetails: %s\n\n", BTM_DIRECTORY.UTF8String, error.localizedDescription.UTF8String);
+        
+        //bail
+        goto bail;
+    }
+    
+    //get files that match ".btm"
+    btmFiles = [files filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"self.absoluteString ENDSWITH '.btm'"]];
+    
+    //grab last file
+    path = btmFiles.lastObject;
+    
+bail:
+    
+    return path;
+}
+
 
 @implementation Storage
 
@@ -165,7 +216,6 @@ bail:
         //decode items
         // 'itemsByUserIdentifier'
         self.items = [decoder decodeObjectOfClasses:[NSSet setWithArray:itemClasses] forKey:@"itemsByUserIdentifier"];
-
     }
     
     //TODO:
