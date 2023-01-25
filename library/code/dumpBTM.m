@@ -1,165 +1,254 @@
 //
-//  main.m
-//  dumpBTM
+//  dumpBTM.m
+//  dumpBTM (library)
 //
-//  Created by Patrick Wardle on 1/1/23.
+//  Created by Patrick Wardle on 1/20/23.
 //
 
-#import <Foundation/Foundation.h>
-#import <OpenDirectory/OpenDirectory.h>
-#import <DirectoryService/DirectoryService.h>
+#import "dumpBTM.h"
+#import "dumpBT_Internal.h"
 
-#define BTM_DIRECTORY @"/private/var/db/com.apple.backgroundtaskmanagement/"
-
-//helper function(s)
-NSURL* getBTMPath(void);
-uid_t uidFromUUID(NSString* uuid);
-
-//Storage obj
-@interface Storage : NSObject <NSSecureCoding>
-
-@property(nonatomic, retain)NSDictionary* items;
-
-@end
-
-//item record obj
-@interface ItemRecord : NSObject <NSSecureCoding>
-
-@property(nonatomic, retain)NSUUID* uuid;
-@property(nonatomic, retain)NSString* identifier;
-@property NSInteger generation;
-@property(nonatomic, retain)NSURL* url;
-@property(nonatomic, retain)NSString* executablePath;
-@property(nonatomic, retain)NSString* name;
-@property(nonatomic, retain)NSString* developerName;
-@property(nonatomic, retain)NSString* teamIdentifier;
-@property(nonatomic, retain)NSData* lightweightRequirement;
-@property NSInteger type;
-@property NSInteger disposition;
-@property(nonatomic, retain)NSData* bookmark;
-@property(nonatomic, retain)NSString* bundleIdentifier;
-@property(nonatomic, retain)NSArray* associatedBundleIdentifiers;
-@property(nonatomic, retain)NSString* container;
-@property(nonatomic, retain)NSMutableSet* items;
-
--(NSString*)dumpVerboseDescription;
-
-@end
-
-
-//main
-// just dump DB to stdout
-// TODO: add option to print as JSON
-int main(int argc, const char * argv[]) {
+//load a btm file
+NSInteger load(NSURL** path, NSKeyedUnarchiver** keyedUnarchiver)
+{
+    //result
+    NSInteger result = -1;
     
-    //status
-    int status = -1;
+    //error
+    NSError* error = nil;
     
-    @autoreleasepool {
-        
-        //error
-        NSError* error = nil;
-        
-        //(btm) path
-        NSURL* path = nil;
-        
-        //unarchiver
-        NSKeyedUnarchiver* keyedUnarchiver = nil;
-        
-        //database (raw/unserialized) data
-        NSData* dbData = nil;
-        
-        //database dictionary
-        NSMutableDictionary* dbDictionary = nil;
-        
-        //database storage obj
-        Storage* storage = nil;
-        
-        //init
-        dbDictionary = [NSMutableDictionary dictionary];
-        
-        //dbg msg
-        printf("%s v0.96\nDumps (unserializes) BackgroundItems-v*.btm\n\n", [[NSProcessInfo.processInfo.arguments.firstObject lastPathComponent] UTF8String]);
-        
+    //database data
+    NSData* data = nil;
+    
+    //no (user-specified) path?
+    // find/use system's btm path
+    if(nil == *path)
+    {
         //get btm path
-        path = getBTMPath();
-        if(nil == path)
+        *path = getPath();
+        if(nil == *path)
         {
-            //error msg
-            printf("ERROR: failed to find a 'btm' file\n...do you have Full Disk Access (FDA)?\n\n");
+            //err msg
+            os_log_error(OS_LOG_DEFAULT, "ERROR: failed to find a .btm file in %{public}@", BTM_DIRECTORY);
+            
+            //set
+            result = ENOENT;
+            
+            //bail
             goto bail;
         }
+    }
+    
+    //load database
+    // note: this will fail if client doesn't have full disk access
+    data = [NSData dataWithContentsOfURL:*path options:0 error:&error];
+    if(nil == data)
+    {
+        //err msg
+        os_log_error(OS_LOG_DEFAULT, "ERROR: failed to open/load %{public}@", *path);
         
-        //load database
-        // note: this will fail if you don't have full disk access
-        dbData = [NSData dataWithContentsOfURL:path options:0 error:&error];
-        if(nil == dbData)
-        {
-            //error msg
-            printf("ERROR: failed to load %s\n\nDo you have Full Disk Access?\n\n", path.path.UTF8String);
-            goto bail;
-        }
+        //set error
+        result = error.code;
         
-        //dbg msg
-        printf("Opened %s\n\n", path.path.UTF8String);
-        
-        //init unachiver
-        keyedUnarchiver = [[NSKeyedUnarchiver alloc] initForReadingFromData:dbData error:&error];
-        
-        //set this (for debugging)
-        keyedUnarchiver.decodingFailurePolicy = NSDecodingFailurePolicyRaiseException;
-        
-        //get version
-        dbDictionary[@"version"] = [NSNumber numberWithInteger:[keyedUnarchiver decodeIntegerForKey:@"version"]];
-        
-        //get store
-        dbDictionary[@"store"] = [keyedUnarchiver decodeObjectOfClass:[Storage class] forKey:@"store"];
+        //bail
+        goto bail;
+    }
+    
+    //init unachiver
+    *keyedUnarchiver = [[NSKeyedUnarchiver alloc] initForReadingFromData:data error:&error];
+    
+    //set decoding failure policy
+    // will throw an exception if unserialization fails
+    (*keyedUnarchiver).decodingFailurePolicy = NSDecodingFailurePolicyRaiseException;
+    
+    //happy
+    result = noErr;
+    
+bail:
+    
+    return result;
+}
 
-        //grab storage obj
-        storage = dbDictionary[@"store"];
+//API interface
+// dump a btm file to stdout
+NSInteger dump(NSURL* path)
+{
+    //result
+    NSInteger result = -1;
+            
+    //database storage obj
+    Storage* storage = nil;
+    
+    //unarchiver
+    NSKeyedUnarchiver* keyedUnarchiver = nil;
+
+    //load
+    result = load(&path, &keyedUnarchiver);
+    if(result != noErr)
+    {
+        //err msg
+        printf("ERROR: failed to open/load %s\n\n", path.path.UTF8String);
         
-        //process each/all items
-        for(NSString* key in storage.items)
+        //bail
+        goto bail;
+    }
+    
+    //dbg msg
+    printf("Opened %s\n\n", path.path.UTF8String);
+    
+    //wrap unserialization
+    @try {
+        
+        //decode storage object
+        // this in turn will decode all items
+        storage = [keyedUnarchiver decodeObjectOfClass:[Storage class] forKey:@"store"];
+    }
+    //exception
+    @catch (NSException *exception) {
+        
+        //err msg
+        printf("ERROR: unserializing failed with %s\n\n", exception.description.UTF8String);
+        
+        //bail
+        goto bail;
+    }
+    
+    //process each/all items
+    for(NSString* key in storage.items)
+    {
+        //uid
+        uid_t uid = 0;
+        
+        //items
+        NSArray* items = nil;
+        
+        //item number
+        int itemNumber = 0;
+        
+        //get uid from uuid
+        uid = uidFromUUID(key);
+        
+        //header (w/ uid/uuid)
+        printf("========================\n Records for UID %d : %s\n========================\n\n", uid, key.description.UTF8String);
+        
+        printf(" Items:\n\n");
+        
+        //process each item
+        items = storage.items[key];
+        for(ItemRecord* item in items)
         {
-            //uid
-            uid_t uid = 0;
-            
-            //items
-            NSArray* items = nil;
-            
-            //item number
-            int itemNumber = 0;
-            
-            //get uid from uuid
-            uid = uidFromUUID(key);
-            
-            //header (w/ uid/uuid)
-            printf("========================\n Records for UID %d : %s\n========================\n\n", uid, key.description.UTF8String);
-            
-            printf(" Items:\n\n");
-            
-            //process each item
-            items = storage.items[key];
-            for(ItemRecord* item in items)
-            {
-                //display number and item details.
-                printf(" #%d\n", ++itemNumber);
-                printf(" %s\n", [[item dumpVerboseDescription] UTF8String]);
-            }
+            //display number and item details.
+            printf(" #%d\n", ++itemNumber);
+            printf(" %s\n", [[item dumpVerboseDescription] UTF8String]);
         }
-        
-        //happy
-        status = 0;
     }
     
 bail:
     
-    return status;
+    return result;
+}
+
+
+//API interface
+// parse a btm file into a dictionary
+NSDictionary* parse(NSURL* path)
+{
+    //result
+    NSInteger result = -1;
+    
+    //contents
+    NSMutableDictionary* contents = nil;
+    
+    //unarchiver
+    NSKeyedUnarchiver* keyedUnarchiver = nil;
+    
+    //database storage obj
+    Storage* storage = nil;
+    
+    //items
+    NSMutableDictionary* itemsByUserID = nil;
+    
+    //init contents
+    contents = [NSMutableDictionary dictionary];
+    
+    //init
+    itemsByUserID = [NSMutableDictionary dictionary];
+    
+    //load
+    result = load(&path, &keyedUnarchiver);
+    if(result != noErr)
+    {
+        //set error
+        contents[KEY_ERROR] = [NSNumber numberWithLong:result];
+        
+        //bail
+        goto bail;
+    }
+    
+    //set path
+    contents[KEY_PATH] = path;
+    
+    //wrap unserialization
+    @try {
+        
+        //decode version
+        contents[KEY_VERSION] = [NSNumber numberWithInteger:[keyedUnarchiver decodeIntegerForKey:@"version"]];
+
+        //decode storage object
+        // this in turn will decode all items
+        storage = [keyedUnarchiver decodeObjectOfClass:[Storage class] forKey:@"store"];
+    }
+    //exception
+    @catch (NSException *exception) {
+        
+        //err msg
+        os_log_error(OS_LOG_DEFAULT, "ERROR: unserializing failed with %{public}@", exception);
+        
+        //set error
+        contents[KEY_ERROR] = [NSNumber numberWithLong:EFTYPE];
+    
+        //bail
+        goto bail;
+    }
+
+    //process each/all items
+    // key is the UUID (mapping to a uid)
+    for(NSString* key in storage.items)
+    {
+        //uid
+        uid_t uid = 0;
+        
+        //items
+        NSMutableArray* items = nil;
+        
+        //init
+        items = [NSMutableArray array];
+        
+        //get uid from uuid
+        uid = uidFromUUID(key);
+        
+        //process each item
+        for(ItemRecord* item in storage.items[key])
+        {
+            //add item
+            [items addObject:[item toDictionary]];
+        }
+        
+        //add items
+        itemsByUserID[key] = items;
+    }
+    
+    //save all items by user id
+    contents[KEY_ITEMS_BY_USER_ID] = itemsByUserID;
+    
+bail:
+    
+    return contents;
 }
 
 //get path of BTM file
-// changes between macOS versions, so...
-NSURL* getBTMPath(void)
+// looks in "/private/var/db/com.apple.backgroundtaskmanagement/"
+NSURL* getPath(void)
 {
     //path
     NSURL* path = nil;
@@ -178,7 +267,7 @@ NSURL* getBTMPath(void)
     if(nil == files)
     {
         //err msg
-        printf("\nERROR: failed to enumerate files in %s\nDetails: %s\n\n", BTM_DIRECTORY.UTF8String, error.localizedDescription.UTF8String);
+        os_log_error(OS_LOG_DEFAULT, "ERROR: failed to enumerate files in %{public}@\nDetails: %{public}@\n\n", BTM_DIRECTORY, error);
         
         //bail
         goto bail;
@@ -258,7 +347,8 @@ bail:
         self.disposition = [decoder decodeIntegerForKey:@"disposition"];
         self.bookmark = [decoder decodeObjectOfClass:[NSData class] forKey:@"bookmark"];
         self.bundleIdentifier = [decoder decodeObjectOfClass:[NSString class] forKey:@"bundleIdentifier"];
-        self.associatedBundleIdentifiers = [decoder decodeObjectOfClass:[NSArray class] forKey:@"associatedBundleIdentifiers"];
+        self.associatedBundleIdentifiers = [decoder decodeObjectOfClasses:[NSSet setWithArray:@[[NSArray class], [NSString class]]] forKey:@"associatedBundleIdentifiers"];
+    
         self.container = [decoder decodeObjectOfClass:[NSString class] forKey:@"container"];
         
         NSArray* itemsArray = [decoder decodeArrayOfObjectsOfClass:[NSString class] forKey:@"items"];
@@ -340,6 +430,8 @@ bail:
 {
     //details
     NSMutableString* details = nil;
+    
+    //init
     details = [NSMutableString string];
     
     //enabled
@@ -352,6 +444,7 @@ bail:
     {
         [details appendString:@"disabled "];
     }
+    
     //allowed
     if(self.disposition & 0x2)
     {
@@ -384,7 +477,100 @@ bail:
     {
         [details appendString:@"not notified"];
     }
+    
     return details;
+}
+
+//convert to a dictionary
+-(NSDictionary*)toDictionary
+{
+    //item
+    NSMutableDictionary* item = nil;
+    
+    //bundle ids
+    NSMutableArray* bundleIDs = nil;
+    
+    //embedded items
+    NSMutableArray* embeddedItems = nil;
+    
+    //init
+    item = [NSMutableDictionary dictionary];
+    
+    //uuid
+    item[@"UUID"] = self.uuid;
+    
+    //name
+    item[@"Name"] = self.name;
+    
+    //dev
+    item[@"Developer Name"] = self.developerName;
+    
+    //team id
+    if(nil != self.teamIdentifier)
+    {
+        item[@"Team Identifier"] = self.teamIdentifier;
+    }
+    
+    //type
+    item[@"Type"] = [NSNumber numberWithLong:(long)self.type];
+    
+    //type description
+    item[@"Type Description"] = [self typeDetails];
+    
+    //disposition
+    item[@"Disposition"] = [NSNumber numberWithLong:(long)self.disposition];
+    
+    //disposition details
+    item[@"Disposition Details"] = [self dispositionDetails];
+    
+    //indentifier
+    item[@"Indentifier"] = self.identifier;
+    
+    //url
+    item[@"URL"] = self.url;
+    
+    //path
+    item[@"Executable Path"] = self.executablePath;
+    
+    //generation
+    item[@"Generation"] = [NSNumber numberWithLong:(long)self.generation];
+    
+    //associated bundle ids
+    if(0 != self.associatedBundleIdentifiers.count)
+    {
+        //init
+        bundleIDs = [NSMutableArray array];
+        
+        //add each
+        for(NSString* associatedBundleIdentifier in self.associatedBundleIdentifiers)
+        {
+            //add
+            [bundleIDs addObject:associatedBundleIdentifier];
+        }
+        
+        item[@"Assoc. Bundle IDs"] = bundleIDs;
+    }
+    
+    //parent
+    item[@"Parent Identifier"] = self.container;
+    
+    //items
+    if(0 != self.items.count)
+    {
+        //init
+        embeddedItems = [NSMutableArray array];
+        
+        //add each
+        for(NSString* item in self.items.allObjects)
+        {
+            //add
+            [embeddedItems addObject:item];
+        }
+        
+        item[@"Embedded Item Identifiers"] = embeddedItems;
+    }
+
+    return item;
 }
 
 //dump
@@ -466,7 +652,7 @@ bail:
 
 
 //helper function
-//grab a UID from a UUID
+//get a UID from a UUID
 uid_t uidFromUUID(NSString* uuid)
 {
     //uid
@@ -508,3 +694,4 @@ uid_t uidFromUUID(NSString* uuid)
     return uid;
 }
 
+//TODO: dumpVerboseDescription

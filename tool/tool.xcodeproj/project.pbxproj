@@ -7,11 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CDCA2856296A748A00944E6D /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = CDCA2855296A748A00944E6D /* main.m */; };
+		CD7B6A94297B564300E59E7F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = CD7B6A93297B564300E59E7F /* main.m */; };
+		CD7B6AA3297B5B8C00E59E7F /* libDumpBTM.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CD7B6AA2297B5B8C00E59E7F /* libDumpBTM.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		CDCA2850296A748A00944E6D /* CopyFiles */ = {
+		CD7B6A8E297B564300E59E7F /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = /usr/share/man/man1/;
@@ -23,84 +24,93 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		CD5A02232978734E00363786 /* dumpBTM.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dumpBTM.entitlements; sourceTree = "<group>"; };
-		CD5A02242978758B00363786 /* Products */ = {isa = PBXFileReference; lastKnownFileType = text; name = Products; path = DerivedData/dumpBTM/Build/Products; sourceTree = SOURCE_ROOT; };
-		CDCA2852296A748A00944E6D /* dumpBTM */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = dumpBTM; sourceTree = BUILT_PRODUCTS_DIR; };
-		CDCA2855296A748A00944E6D /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		CD7B6A90297B564300E59E7F /* dumpBTM */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = dumpBTM; sourceTree = BUILT_PRODUCTS_DIR; };
+		CD7B6A93297B564300E59E7F /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = main.m; path = code/main.m; sourceTree = "<group>"; };
+		CD7B6A9F297B5B2B00E59E7F /* dumpBTM.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = dumpBTM.h; path = lib/dumpBTM.h; sourceTree = "<group>"; };
+		CD7B6AA2297B5B8C00E59E7F /* libDumpBTM.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libDumpBTM.a; path = lib/libDumpBTM.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		CDCA284F296A748A00944E6D /* Frameworks */ = {
+		CD7B6A8D297B564300E59E7F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CD7B6AA3297B5B8C00E59E7F /* libDumpBTM.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		CDCA2849296A748A00944E6D = {
+		CD7B6A87297B564300E59E7F = {
 			isa = PBXGroup;
 			children = (
-				CDCA2854296A748A00944E6D /* dumpBTM */,
-				CDCA2853296A748A00944E6D /* Products */,
+				CD7B6A92297B564300E59E7F /* tool */,
+				CD7B6A91297B564300E59E7F /* Products */,
+				CD7B6A9C297B5A9D00E59E7F /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
-		CDCA2853296A748A00944E6D /* Products */ = {
+		CD7B6A91297B564300E59E7F /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				CDCA2852296A748A00944E6D /* dumpBTM */,
+				CD7B6A90297B564300E59E7F /* dumpBTM */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		CDCA2854296A748A00944E6D /* dumpBTM */ = {
+		CD7B6A92297B564300E59E7F /* tool */ = {
 			isa = PBXGroup;
 			children = (
-				CD5A02232978734E00363786 /* dumpBTM.entitlements */,
-				CDCA2855296A748A00944E6D /* main.m */,
-				CD5A02242978758B00363786 /* Products */,
+				CD7B6A9F297B5B2B00E59E7F /* dumpBTM.h */,
+				CD7B6A93297B564300E59E7F /* main.m */,
 			);
-			path = dumpBTM;
+			name = tool;
+			sourceTree = "<group>";
+		};
+		CD7B6A9C297B5A9D00E59E7F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				CD7B6AA2297B5B8C00E59E7F /* libDumpBTM.a */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		CDCA2851296A748A00944E6D /* dumpBTM */ = {
+		CD7B6A8F297B564300E59E7F /* tool */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = CDCA2859296A748A00944E6D /* Build configuration list for PBXNativeTarget "dumpBTM" */;
+			buildConfigurationList = CD7B6A97297B564300E59E7F /* Build configuration list for PBXNativeTarget "tool" */;
 			buildPhases = (
-				CDCA284E296A748A00944E6D /* Sources */,
-				CDCA284F296A748A00944E6D /* Frameworks */,
-				CDCA2850296A748A00944E6D /* CopyFiles */,
+				CD7B6A8C297B564300E59E7F /* Sources */,
+				CD7B6A8D297B564300E59E7F /* Frameworks */,
+				CD7B6A8E297B564300E59E7F /* CopyFiles */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = dumpBTM;
-			productName = parseBTM;
-			productReference = CDCA2852296A748A00944E6D /* dumpBTM */;
+			name = tool;
+			productName = tool;
+			productReference = CD7B6A90297B564300E59E7F /* dumpBTM */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		CDCA284A296A748A00944E6D /* Project object */ = {
+		CD7B6A88297B564300E59E7F /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastUpgradeCheck = 1420;
 				TargetAttributes = {
-					CDCA2851296A748A00944E6D = {
-						CreatedOnToolsVersion = 14.1;
+					CD7B6A8F297B564300E59E7F = {
+						CreatedOnToolsVersion = 14.2;
 					};
 				};
 			};
-			buildConfigurationList = CDCA284D296A748A00944E6D /* Build configuration list for PBXProject "dumpBTM" */;
+			buildConfigurationList = CD7B6A8B297B564300E59E7F /* Build configuration list for PBXProject "tool" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -108,29 +118,29 @@
 				en,
 				Base,
 			);
-			mainGroup = CDCA2849296A748A00944E6D;
-			productRefGroup = CDCA2853296A748A00944E6D /* Products */;
+			mainGroup = CD7B6A87297B564300E59E7F;
+			productRefGroup = CD7B6A91297B564300E59E7F /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				CDCA2851296A748A00944E6D /* dumpBTM */,
+				CD7B6A8F297B564300E59E7F /* tool */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-		CDCA284E296A748A00944E6D /* Sources */ = {
+		CD7B6A8C297B564300E59E7F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CDCA2856296A748A00944E6D /* main.m in Sources */,
+				CD7B6A94297B564300E59E7F /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		CDCA2857296A748A00944E6D /* Debug */ = {
+		CD7B6A95297B564300E59E7F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -140,7 +150,6 @@
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_OPTIMIZATION_PROFILE_FILE = "";
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
@@ -164,7 +173,6 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -182,7 +190,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.1;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -190,7 +198,7 @@
 			};
 			name = Debug;
 		};
-		CDCA2858296A748A00944E6D /* Release */ = {
+		CD7B6A96297B564300E59E7F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -200,7 +208,6 @@
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_OPTIMIZATION_PROFILE_FILE = "";
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
@@ -224,7 +231,6 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -236,69 +242,63 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
 			};
 			name = Release;
 		};
-		CDCA285A296A748A00944E6D /* Debug */ = {
+		CD7B6A98297B564300E59E7F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = dumpBTM/dumpBTM.entitlements;
-				CODE_SIGN_IDENTITY = "-";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Developer ID Application";
-				CODE_SIGN_STYLE = Manual;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=macosx*]" = VBG97UB4TA;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = VBG97UB4TA;
 				ENABLE_HARDENED_RUNTIME = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.objective-see.dumpbtm";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/lib/",
+				);
+				PRODUCT_NAME = dumpBTM;
 			};
 			name = Debug;
 		};
-		CDCA285B296A748A00944E6D /* Release */ = {
+		CD7B6A99297B564300E59E7F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = dumpBTM/dumpBTM.entitlements;
-				CODE_SIGN_IDENTITY = "-";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Developer ID Application";
-				CODE_SIGN_STYLE = Manual;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=macosx*]" = VBG97UB4TA;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = VBG97UB4TA;
 				ENABLE_HARDENED_RUNTIME = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.objective-see.dumpbtm";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/lib/",
+				);
+				PRODUCT_NAME = dumpBTM;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		CDCA284D296A748A00944E6D /* Build configuration list for PBXProject "dumpBTM" */ = {
+		CD7B6A8B297B564300E59E7F /* Build configuration list for PBXProject "tool" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				CDCA2857296A748A00944E6D /* Debug */,
-				CDCA2858296A748A00944E6D /* Release */,
+				CD7B6A95297B564300E59E7F /* Debug */,
+				CD7B6A96297B564300E59E7F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		CDCA2859296A748A00944E6D /* Build configuration list for PBXNativeTarget "dumpBTM" */ = {
+		CD7B6A97297B564300E59E7F /* Build configuration list for PBXNativeTarget "tool" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				CDCA285A296A748A00944E6D /* Debug */,
-				CDCA285B296A748A00944E6D /* Release */,
+				CD7B6A98297B564300E59E7F /* Debug */,
+				CD7B6A99297B564300E59E7F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = CDCA284A296A748A00944E6D /* Project object */;
+	rootObject = CD7B6A88297B564300E59E7F /* Project object */;
 }

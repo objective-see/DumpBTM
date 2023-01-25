@@ -14,10 +14,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "CDCA2851296A748A00944E6D"
-               BuildableName = "dumpBTM"
-               BlueprintName = "dumpBTM"
-               ReferencedContainer = "container:dumpBTM.xcodeproj">
+               BlueprintIdentifier = "CD7B6A78297B0CC100E59E7F"
+               BuildableName = "libdumpBTM.a"
+               BlueprintName = "library"
+               ReferencedContainer = "container:library.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -39,18 +39,7 @@
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
-      allowLocationSimulation = "YES"
-      viewDebuggingEnabled = "No">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CDCA2851296A748A00944E6D"
-            BuildableName = "dumpBTM"
-            BlueprintName = "dumpBTM"
-            ReferencedContainer = "container:dumpBTM.xcodeproj">
-         </BuildableReference>
-      </BuildableProductRunnable>
+      allowLocationSimulation = "YES">
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -58,16 +47,15 @@
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CDCA2851296A748A00944E6D"
-            BuildableName = "dumpBTM"
-            BlueprintName = "dumpBTM"
-            ReferencedContainer = "container:dumpBTM.xcodeproj">
+            BlueprintIdentifier = "CD7B6A78297B0CC100E59E7F"
+            BuildableName = "libdumpBTM.a"
+            BlueprintName = "library"
+            ReferencedContainer = "container:library.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">
