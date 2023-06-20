@@ -10,7 +10,6 @@
 #include "dumpBTM.h"
 
 //example program to link/invoke 'dumpBTM' library
-// 
 int main(int argc, const char * argv[]) {
     
     //set if you want a custom btm file
@@ -18,11 +17,7 @@ int main(int argc, const char * argv[]) {
     
     //just dump to stdout
     // similar to: sfltool dumpbtm
-    if(noErr != dump(path))
-    {
-        //err msg
-        printf("ERROR: dump failed\n\n");
-    }
+    dump(path);
     
     //parse into a dictionary
     NSDictionary* contents = parse(path);
