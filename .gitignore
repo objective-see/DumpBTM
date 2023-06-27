@@ -1,4 +1,5 @@
 xcuserdata/
 DerivedData/
 
-tool/.DS_Store
+.DS_Store
+libDumpBTM.a

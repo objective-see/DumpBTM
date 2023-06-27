@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		CD7B6A7D297B0CC100E59E7F /* dumpBT_Internal.h in Headers */ = {isa = PBXBuildFile; fileRef = CD7B6A7C297B0CC100E59E7F /* dumpBT_Internal.h */; };
 		CD7B6A7F297B0CC100E59E7F /* dumpBTM.m in Sources */ = {isa = PBXBuildFile; fileRef = CD7B6A7E297B0CC100E59E7F /* dumpBTM.m */; };
+		CDBFE39F2A49CF85005A9819 /* dumpBTM.h in Headers */ = {isa = PBXBuildFile; fileRef = CDBFE39E2A49CF85005A9819 /* dumpBTM.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -16,6 +17,7 @@
 		CD7B6A79297B0CC100E59E7F /* libdumpBTM.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libdumpBTM.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		CD7B6A7C297B0CC100E59E7F /* dumpBT_Internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dumpBT_Internal.h; sourceTree = "<group>"; };
 		CD7B6A7E297B0CC100E59E7F /* dumpBTM.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = dumpBTM.m; sourceTree = "<group>"; };
+		CDBFE39E2A49CF85005A9819 /* dumpBTM.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = dumpBTM.h; path = ../../library/code/dumpBTM.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +50,7 @@
 		CD7B6A7B297B0CC100E59E7F /* code */ = {
 			isa = PBXGroup;
 			children = (
+				CDBFE39E2A49CF85005A9819 /* dumpBTM.h */,
 				CD7B6A7C297B0CC100E59E7F /* dumpBT_Internal.h */,
 				CD7B6A7E297B0CC100E59E7F /* dumpBTM.m */,
 				CD56F1E229804507000A48AF /* lib */,
@@ -62,6 +65,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CDBFE39F2A49CF85005A9819 /* dumpBTM.h in Headers */,
 				CD7B6A7D297B0CC100E59E7F /* dumpBT_Internal.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -267,6 +271,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = VBG97UB4TA;
 				EXECUTABLE_PREFIX = lib;
+				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = dumpBTM;
 				SKIP_INSTALL = YES;
 			};

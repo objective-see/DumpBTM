@@ -71,7 +71,8 @@ bail:
 
 //API interface
 // dump a btm file to stdout
-NSInteger dump(NSURL* path)
+// path is optional, and if nil, will be found dynamically
+NSInteger dumpBTM(NSURL* path)
 {
     //result
     NSInteger result = -1;
@@ -148,10 +149,10 @@ bail:
     return result;
 }
 
-
 //API interface
 // parse a btm file into a dictionary
-NSDictionary* parse(NSURL* path)
+// path is optional, and if nil, will be found dynamically
+NSDictionary* parseBTM(NSURL* path)
 {
     //result
     NSInteger result = -1;
@@ -179,33 +180,33 @@ NSDictionary* parse(NSURL* path)
     if(result != noErr)
     {
         //set error
-        contents[KEY_ERROR] = [NSNumber numberWithLong:result];
+        contents[KEY_BTM_ERROR] = [NSNumber numberWithLong:result];
         
         //bail
         goto bail;
     }
     
     //set path
-    contents[KEY_PATH] = path;
+    contents[KEY_BTM_PATH] = path;
     
     //wrap unserialization
-    @try {
-        
+    @try
+    {
         //decode version
-        contents[KEY_VERSION] = [NSNumber numberWithInteger:[keyedUnarchiver decodeIntegerForKey:@"version"]];
+        contents[KEY_BTM_VERSION] = [NSNumber numberWithInteger:[keyedUnarchiver decodeIntegerForKey:@"version"]];
 
         //decode storage object
         // this in turn will decode all items
         storage = [keyedUnarchiver decodeObjectOfClass:[Storage class] forKey:@"store"];
     }
     //exception
-    @catch (NSException *exception) {
-        
+    @catch(NSException *exception)
+    {
         //err msg
         os_log_error(OS_LOG_DEFAULT, "ERROR: unserializing failed with %{public}@", exception);
         
         //set error
-        contents[KEY_ERROR] = [NSNumber numberWithLong:EFTYPE];
+        contents[KEY_BTM_ERROR] = [NSNumber numberWithLong:EFTYPE];
     
         //bail
         goto bail;
@@ -239,7 +240,7 @@ NSDictionary* parse(NSURL* path)
     }
     
     //save all items by user id
-    contents[KEY_ITEMS_BY_USER_ID] = itemsByUserID;
+    contents[KEY_BTM_ITEMS_BY_USER_ID] = itemsByUserID;
     
 bail:
     
@@ -497,44 +498,51 @@ bail:
     item = [NSMutableDictionary dictionary];
     
     //uuid
-    item[@"UUID"] = self.uuid;
+    item[KEY_BTM_ITEM_UUID] = self.uuid;
     
     //name
-    item[@"Name"] = self.name;
+    item[KEY_BTM_ITEM_NAME] = self.name;
     
     //dev
-    item[@"Developer Name"] = self.developerName;
+    item[KEY_BTM_ITEM_DEV_NAME] = self.developerName;
     
     //team id
     if(nil != self.teamIdentifier)
     {
-        item[@"Team Identifier"] = self.teamIdentifier;
+        item[KEY_BTM_ITEM_TEAM_ID] = self.teamIdentifier;
     }
     
     //type
-    item[@"Type"] = [NSNumber numberWithLong:(long)self.type];
+    item[KEY_BTM_ITEM_TYPE] = [NSNumber numberWithLong:(long)self.type];
     
     //type description
-    item[@"Type Description"] = [self typeDetails];
+    item[KEY_BTM_ITEM_TYPE_DETAILS] = [self typeDetails];
     
     //disposition
-    item[@"Disposition"] = [NSNumber numberWithLong:(long)self.disposition];
+    item[KEY_BTM_ITEM_DISPOSITION] = [NSNumber numberWithLong:(long)self.disposition];
     
     //disposition details
-    item[@"Disposition Details"] = [self dispositionDetails];
+    item[KEY_BTM_ITEM_DISPOSITION_DETAILS] = [self dispositionDetails];
     
     //indentifier
-    item[@"Indentifier"] = self.identifier;
+    item[KEY_BTM_ITEM_ID] = self.identifier;
     
     //url
-    item[@"URL"] = self.url;
+    item[KEY_BTM_ITEM_URL] = self.url;
     
     //path
-    item[@"Executable Path"] = self.executablePath;
+    item[KEY_BTM_ITEM_EXE_PATH] = self.executablePath;
     
     //generation
-    item[@"Generation"] = [NSNumber numberWithLong:(long)self.generation];
+    item[KEY_BTM_ITEM_GENERATION] = [NSNumber numberWithLong:(long)self.generation];
     
+    //bundle id
+    if(nil != self.bundleIdentifier)
+    {
+        //add
+        item[KEY_BTM_ITEM_BUNDLE_ID] = self.bundleIdentifier;
+    }
+
     //associated bundle ids
     if(0 != self.associatedBundleIdentifiers.count)
     {
@@ -548,11 +556,15 @@ bail:
             [bundleIDs addObject:associatedBundleIdentifier];
         }
         
-        item[@"Assoc. Bundle IDs"] = bundleIDs;
+        item[KEY_BTM_ITEM_ASSOCIATED_IDS] = bundleIDs;
     }
     
     //parent
-    item[@"Parent Identifier"] = self.container;
+    if(0 != self.container.length)
+    {
+        //add
+        item[KEY_BTM_ITEM_PARENT_ID] = self.container;
+    }
     
     //items
     if(0 != self.items.count)
@@ -567,13 +579,14 @@ bail:
             [embeddedItems addObject:item];
         }
         
-        item[@"Embedded Item Identifiers"] = embeddedItems;
+        item[KEY_BTM_ITEM_EMBEDDED_IDS] = embeddedItems;
     }
 
     return item;
 }
 
 //dump
+// build a string for output
 -(NSString *)dumpVerboseDescription {
     
     //desc
@@ -611,6 +624,13 @@ bail:
     //generation
     [description appendFormat:@"  Generation:        %ld\n", self.generation];
     
+    //bundle id
+    if(nil != self.bundleIdentifier)
+    {
+        //add
+        [description appendFormat:@"  Bundle Identifier: %@\n", self.bundleIdentifier];
+    }
+    
     //associated bundle ids
     if(0 != self.associatedBundleIdentifiers.count)
     {
@@ -632,12 +652,18 @@ bail:
     }
     
     //parent id
-    [description appendFormat:@"  Parent Identifier: %@\n", self.container];
+    if(nil != self.container)
+    {
+        //add
+        [description appendFormat:@"  Parent Identifier: %@\n", self.container];
+    }
     
     //items
     if(0 != self.items.count)
     {
         int count = 0;
+        
+        //add identifiers
         [description appendFormat:@"  Embedded Item Identifiers:"];
         for(NSString* item in self.items.allObjects)
         {
@@ -693,5 +719,3 @@ uid_t uidFromUUID(NSString* uuid)
     
     return uid;
 }
-
-//TODO: dumpVerboseDescription
