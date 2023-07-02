@@ -49,7 +49,9 @@ uid_t uidFromUUID(NSString* uuid);
 
 -(NSString*)dumpVerboseDescription;
 
-//custom method
--(NSDictionary*)toDictionary;
+//additional methods
+-(ItemRecord*)findParent:(NSArray*)items;
+-(NSDictionary*)toDictionary:(NSArray*)items;
+
 
 @end

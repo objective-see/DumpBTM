@@ -5,6 +5,11 @@
 //  Created by Patrick Wardle on 1/20/23.
 //
 
+// Note: Once compiled, header file (dumpBTM.h) and library (libDumpBTM.a)
+//       are added to: $SRCROOT/lib/
+//
+//       Copy this header file  / link this library in your own project(s)!
+
 #import "dumpBTM.h"
 #import "dumpBT_Internal.h"
 
@@ -232,7 +237,7 @@ NSDictionary* parseBTM(NSURL* path)
         for(ItemRecord* item in storage.items[key])
         {
             //add item
-            [items addObject:[item toDictionary]];
+            [items addObject:[item toDictionary:storage.items[key]]];
         }
         
         //add items
@@ -284,7 +289,6 @@ bail:
     
     return path;
 }
-
 
 @implementation Storage
 
@@ -372,7 +376,7 @@ bail:
 }
 
 //convert item record's type to string
-// TODO: handle all types (e.g. managaged?)
+// TODO: handle more types (e.g. managaged?)
 -(NSString *)typeDetails
 {
     //details
@@ -399,7 +403,7 @@ bail:
         [details appendString:@"developer "];
     }
     
-    //daaemon
+    //daemon
     if(self.type & 0x10)
     {
         [details appendString:@"daemon "];
@@ -483,14 +487,21 @@ bail:
 }
 
 //convert to a dictionary
--(NSDictionary*)toDictionary
+// with additional logic to extract plist/exe paths
+-(NSDictionary*)toDictionary:(NSArray*)items
 {
     //item
     NSMutableDictionary* item = nil;
     
+    //bundle
+    NSBundle* bundle = nil;
+    
     //bundle ids
     NSMutableArray* bundleIDs = nil;
     
+    //parent
+    ItemRecord* parent = nil;
+
     //embedded items
     NSMutableArray* embeddedItems = nil;
     
@@ -579,7 +590,57 @@ bail:
             [embeddedItems addObject:item];
         }
         
+        //save
         item[KEY_BTM_ITEM_EMBEDDED_IDS] = embeddedItems;
+    }
+    
+    //agents/daemons
+    // path: already set
+    // plist: is in 'url'
+    if( (self.type & 0x8) ||
+        (self.type & 0x10) )
+    {
+        //set plist
+        if(nil != self.url)
+        {
+            //plist
+            item[KEY_BTM_ITEM_PLIST_PATH] = self.url.path;
+        }
+    }
+    
+    //login item
+    // path: construct via parent
+    else if(self.type & 0x4)
+    {
+        //find parent
+        parent = [self findParent:items];
+        if(nil != parent)
+        {
+            bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@%@", parent.url.path, self.url.path]];
+        }
+        
+        //add exe path
+        if(nil != bundle.executablePath)
+        {
+            //exe path
+            item[KEY_BTM_ITEM_EXE_PATH] = bundle.executablePath;
+        }
+    }
+    
+    //app
+    // path to app bundle is in url
+    // ...load bundle to get exe path
+    else if(self.type & 0x2)
+    {
+        //load bundle from app path
+        bundle = [NSBundle bundleWithPath:self.url.path];
+        
+        //add exe path
+        if(nil != bundle.executablePath)
+        {
+            //exe path
+            item[KEY_BTM_ITEM_EXE_PATH] = bundle.executablePath;
+        }
     }
 
     return item;
@@ -661,6 +722,7 @@ bail:
     //items
     if(0 != self.items.count)
     {
+        //count
         int count = 0;
         
         //add identifiers
@@ -674,6 +736,41 @@ bail:
     
     return description;
 }
+
+//helper function
+// find parent, via ID
+-(ItemRecord*)findParent:(NSArray*)items
+{
+    //parent
+    ItemRecord* parent = nil;
+    
+    //find parent
+    for(ItemRecord* item in items)
+    {
+        //not a parent?
+        if(nil == item.identifier)
+        {
+            //skip
+            continue;
+        }
+        
+        //no match
+        if(YES != [item.identifier isEqualToString:self.container])
+        {
+            continue;
+        }
+    
+        //match
+        // save parent
+        parent = item;
+        
+        //done
+        break;
+    }
+
+    return parent;
+}
+
 @end
 
 

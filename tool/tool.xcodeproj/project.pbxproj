@@ -26,8 +26,8 @@
 /* Begin PBXFileReference section */
 		CD7B6A90297B564300E59E7F /* dumpBTM */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = dumpBTM; sourceTree = BUILT_PRODUCTS_DIR; };
 		CD7B6A93297B564300E59E7F /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = main.m; path = code/main.m; sourceTree = "<group>"; };
-		CD7B6A9F297B5B2B00E59E7F /* dumpBTM.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = dumpBTM.h; path = lib/dumpBTM.h; sourceTree = "<group>"; };
-		CD7B6AA2297B5B8C00E59E7F /* libDumpBTM.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libDumpBTM.a; path = lib/libDumpBTM.a; sourceTree = "<group>"; };
+		CD7B6A9F297B5B2B00E59E7F /* dumpBTM.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = dumpBTM.h; path = ../library/lib/dumpBTM.h; sourceTree = "<group>"; };
+		CD7B6AA2297B5B8C00E59E7F /* libDumpBTM.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libDumpBTM.a; path = ../library/lib/libDumpBTM.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */

@@ -17,12 +17,13 @@ int main(int argc, const char * argv[]) {
     
     //just dump to stdout
     // similar to: sfltool dumpbtm
-    dumpBTM([NSURL fileURLWithPath:@"/Users/patrick/Desktop/BackgroundItems-v8.btm"]);
+    dumpBTM(path);
     
     //parse into a dictionary
-    //NSDictionary* contents = parseBTM(nil);
+    // containing items (in dictionaries)
+    NSDictionary* contents = parseBTM(path);
     
-    //now, do stuff with contents...
-
+    //now do something with extracted/parsed out items
+    
     return 0;
 }
