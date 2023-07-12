@@ -535,7 +535,7 @@ bail:
     //disposition details
     item[KEY_BTM_ITEM_DISPOSITION_DETAILS] = [self dispositionDetails];
     
-    //indentifier
+    //identifier
     item[KEY_BTM_ITEM_ID] = self.identifier;
     
     //url
@@ -674,7 +674,7 @@ bail:
     [description appendFormat:@"  Disposition:       [%@] (%ld)\n", [self dispositionDetails], (long)self.disposition];
     
     //id
-    [description appendFormat:@"  Indentifier:       %@\r\n", self.identifier];
+    [description appendFormat:@"  Identifier:       %@\r\n", self.identifier];
     
     //url
     [description appendFormat:@"  URL:               %@\n", self.url];
