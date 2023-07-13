@@ -22,7 +22,11 @@ uid_t uidFromUUID(NSString* uuid);
 //Storage obj
 @interface Storage : NSObject <NSSecureCoding>
 
+//items
 @property(nonatomic, retain)NSDictionary* items;
+
+//mdm items
+@property(nonatomic, retain)NSDictionary* mdmItems;
 
 @end
 

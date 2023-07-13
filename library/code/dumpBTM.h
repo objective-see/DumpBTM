@@ -11,6 +11,7 @@
 #define KEY_BTM_PATH @"path"
 #define KEY_BTM_ERROR @"error"
 #define KEY_BTM_VERSION @"version"
+#define KEY_BTM_MDM_PAYLOAD @"mdmPayloadsByIdentifier"
 #define KEY_BTM_ITEMS_BY_USER_ID @"itemsByUserIdentifier"
 
 //keys for item(s)

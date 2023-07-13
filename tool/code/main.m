@@ -12,8 +12,15 @@
 //example program to link/invoke 'dumpBTM' library
 int main(int argc, const char * argv[]) {
     
-    //set if you want a custom btm file
+    //for user-specified path
     NSURL* path = nil;
+    
+    //user-specified path?
+    if(argc == 2)
+    {
+        //set
+        path = [[NSURL alloc] initFileURLWithPath:[NSString stringWithUTF8String:argv[1]]];
+    }
     
     //just dump to stdout
     // similar to: sfltool dumpbtm

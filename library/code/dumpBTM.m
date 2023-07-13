@@ -87,6 +87,9 @@ NSInteger dumpBTM(NSURL* path)
     
     //unarchiver
     NSKeyedUnarchiver* keyedUnarchiver = nil;
+    
+    //item number
+    int itemNumber = 0;
 
     //load
     result = load(&path, &keyedUnarchiver);
@@ -128,9 +131,6 @@ NSInteger dumpBTM(NSURL* path)
         //items
         NSArray* items = nil;
         
-        //item number
-        int itemNumber = 0;
-        
         //get uid from uuid
         uid = uidFromUUID(key);
         
@@ -147,6 +147,27 @@ NSInteger dumpBTM(NSURL* path)
             printf(" #%d\n", ++itemNumber);
             printf(" %s\n", [[item dumpVerboseDescription] UTF8String]);
         }
+    }
+    
+    //any mdm items?
+    if(0 != storage.mdmItems.count)
+    {
+        //reset
+        itemNumber = 0;
+        
+        //dbg output
+        printf("========================\n");
+        printf("\n MDM Payloads:\n\n");
+    }
+    
+    //print out all mdm items
+    for(NSString* key in storage.mdmItems)
+    {
+        //item
+        NSDictionary* mdmItem = storage.mdmItems[key];
+        
+        //print
+        printf("#%d: %s:\n%s\n", ++itemNumber, key.UTF8String, mdmItem.description.UTF8String);
     }
     
 bail:
@@ -247,6 +268,13 @@ NSDictionary* parseBTM(NSURL* path)
     //save all items by user id
     contents[KEY_BTM_ITEMS_BY_USER_ID] = itemsByUserID;
     
+    //save MDM payloads
+    if(0 != storage.mdmItems.count)
+    {
+        //save
+        contents[KEY_BTM_MDM_PAYLOAD] = storage.mdmItems;
+    }
+    
 bail:
     
     return contents;
@@ -305,16 +333,19 @@ bail:
     if(self = [super init])
     {
         //supported classes
-        NSArray* itemClasses = @[[NSMutableDictionary class], [NSString class], [NSArray class], [ItemRecord class]];
+        NSArray* itemClasses = @[[NSMutableDictionary class], [NSString class], [NSArray class], [NSNumber class], [ItemRecord class]];
         
         //decode items
         // 'itemsByUserIdentifier'
         self.items = [decoder decodeObjectOfClasses:[NSSet setWithArray:itemClasses] forKey:@"itemsByUserIdentifier"];
+        
+        //decode items
+        // 'mdmPaloadsByIdentifier'
+        self.mdmItems = [decoder decodeObjectOfClasses:[NSSet setWithArray:itemClasses] forKey:@"mdmPaloadsByIdentifier"];
     }
     
     //TODO:
-    // "userSettingsByUserIdentifier" & "mdmPaloadsByIdentifier"
-    
+    // "userSettingsByUserIdentifier"
     
     return self;
 }
@@ -719,7 +750,7 @@ bail:
         [description appendFormat:@"  Parent Identifier: %@\n", self.container];
     }
     
-    //items
+    //embedded items
     if(0 != self.items.count)
     {
         //count
