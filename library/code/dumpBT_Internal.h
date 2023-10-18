@@ -10,6 +10,8 @@
 @import OpenDirectory;
 @import DirectoryService;
 
+#define BTM_DAEMON "/System/Library/PrivateFrameworks/BackgroundTaskManagement.framework/Resources/backgroundtaskmanagementd"
+
 #define BTM_DIRECTORY @"/private/var/db/com.apple.backgroundtaskmanagement/"
 
 //helper function(s)
@@ -19,19 +21,19 @@ uid_t uidFromUUID(NSString* uuid);
 /* the following objects
    ...dumped from backgroundtaskmanagementd */
 
-//Storage obj
-@interface Storage : NSObject <NSSecureCoding>
+//Storage object
+@interface Storage : NSObject
 
 //items
-@property(nonatomic, retain)NSDictionary* items;
+@property(nonatomic, retain)NSDictionary* itemsByUserIdentifier;
 
 //mdm items
-@property(nonatomic, retain)NSDictionary* mdmItems;
+@property(nonatomic, retain)NSDictionary* mdmPayloadsByIdentifier;
 
 @end
 
-//Item Record obj
-@interface ItemRecord : NSObject <NSSecureCoding>
+//Item Record object
+@interface ItemRecord : NSObject
 
 @property NSInteger type;
 @property NSInteger generation;
@@ -42,7 +44,7 @@ uid_t uidFromUUID(NSString* uuid);
 @property(nonatomic, retain)NSString* name;
 @property(nonatomic, retain)NSData* bookmark;
 @property(nonatomic, retain)NSString* container;
-@property(nonatomic, retain)NSMutableSet* items;
+@property(nonatomic, retain)NSMutableSet* embeddedItems;
 @property(nonatomic, retain)NSString* identifier;
 @property(nonatomic, retain)NSString* developerName;
 @property(nonatomic, retain)NSString* executablePath;
@@ -50,12 +52,5 @@ uid_t uidFromUUID(NSString* uuid);
 @property(nonatomic, retain)NSString* bundleIdentifier;
 @property(nonatomic, retain)NSData* lightweightRequirement;
 @property(nonatomic, retain)NSArray* associatedBundleIdentifiers;
-
--(NSString*)dumpVerboseDescription;
-
-//additional methods
--(ItemRecord*)findParent:(NSArray*)items;
--(NSDictionary*)toDictionary:(NSArray*)items;
-
 
 @end

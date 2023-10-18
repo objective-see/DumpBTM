@@ -13,6 +13,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		CD4D4EAD2ADFCBF000DAFFB5 /* BackgroundTaskManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = BackgroundTaskManagement.framework; path = ../../../../../System/Library/PrivateFrameworks/BackgroundTaskManagement.framework; sourceTree = "<group>"; };
 		CD7B6A79297B0CC100E59E7F /* libdumpBTM.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libdumpBTM.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		CD7B6A7C297B0CC100E59E7F /* dumpBT_Internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dumpBT_Internal.h; sourceTree = "<group>"; };
 		CD7B6A7E297B0CC100E59E7F /* dumpBTM.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = dumpBTM.m; sourceTree = "<group>"; };
@@ -30,11 +31,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		CD4D4EAC2ADFCBF000DAFFB5 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				CD4D4EAD2ADFCBF000DAFFB5 /* BackgroundTaskManagement.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		CD7B6A70297B0CC100E59E7F = {
 			isa = PBXGroup;
 			children = (
 				CD7B6A7B297B0CC100E59E7F /* code */,
 				CD7B6A7A297B0CC100E59E7F /* Products */,
+				CD4D4EAC2ADFCBF000DAFFB5 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -272,6 +282,10 @@
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = dumpBTM;
 				SKIP_INSTALL = YES;
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks",
+				);
 			};
 			name = Debug;
 		};
@@ -283,6 +297,10 @@
 				EXECUTABLE_PREFIX = lib;
 				PRODUCT_NAME = dumpBTM;
 				SKIP_INSTALL = YES;
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks",
+				);
 			};
 			name = Release;
 		};

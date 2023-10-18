@@ -257,7 +257,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/lib/",
+					"$(PROJECT_DIR)/",
 				);
 				PRODUCT_NAME = dumpBTM;
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -272,7 +272,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/lib/",
+					"$(PROJECT_DIR)/",
 				);
 				PRODUCT_NAME = dumpBTM;
 				PROVISIONING_PROFILE_SPECIFIER = "";

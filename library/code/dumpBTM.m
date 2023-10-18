@@ -10,20 +10,44 @@
 //
 //       Copy this header file  / link this library in your own project(s)!
 
+#import <dlfcn.h>
 #import "dumpBTM.h"
 #import "dumpBT_Internal.h"
 
-//load a btm file
-NSInteger load(NSURL** path, NSKeyedUnarchiver** keyedUnarchiver)
+/* GLOBALS */
+
+//handle to btm daemon
+void* btmd = NULL;
+
+/* FUNCTION DEF */
+
+//helper
+// convert ItemRecord to dictionary
+NSDictionary* toDictionary(ItemRecord* record, NSArray* items);
+
+//constructor
+// load btm daemon (into our memory)
+__attribute__((constructor)) static void initDumpBTM(void)
 {
-    //result
-    NSInteger result = -1;
+    //load btm daemon
+    // its contains obj methods we need
+    btmd = dlopen(BTM_DAEMON, RTLD_LAZY);
     
+    return;
+}
+
+//load a btm file
+// and init a NSKeyedUnarchiver for it
+NSKeyedUnarchiver* load(NSURL** path)
+{
     //error
     NSError* error = nil;
     
     //database data
     NSData* data = nil;
+    
+    //unarchiver
+    NSKeyedUnarchiver* keyedUnarchiver = nil;
     
     //no (user-specified) path?
     // find/use system's btm path
@@ -36,15 +60,12 @@ NSInteger load(NSURL** path, NSKeyedUnarchiver** keyedUnarchiver)
             //err msg
             os_log_error(OS_LOG_DEFAULT, "ERROR: failed to find a .btm file in %{public}@", BTM_DIRECTORY);
             
-            //set
-            result = ENOENT;
-            
             //bail
             goto bail;
         }
     }
-    
-    //load database
+
+    //load database *path
     // note: this will fail if client doesn't have full disk access
     data = [NSData dataWithContentsOfURL:*path options:0 error:&error];
     if(nil == data)
@@ -52,48 +73,48 @@ NSInteger load(NSURL** path, NSKeyedUnarchiver** keyedUnarchiver)
         //err msg
         os_log_error(OS_LOG_DEFAULT, "ERROR: failed to open/load %{public}@", *path);
         
-        //set error
-        result = error.code;
-        
         //bail
         goto bail;
     }
     
     //init unachiver
-    *keyedUnarchiver = [[NSKeyedUnarchiver alloc] initForReadingFromData:data error:&error];
+    keyedUnarchiver = [[NSKeyedUnarchiver alloc] initForReadingFromData:data error:&error];
     
     //set decoding failure policy
     // will throw an exception if unserialization fails
-    (*keyedUnarchiver).decodingFailurePolicy = NSDecodingFailurePolicyRaiseException;
-    
-    //happy
-    result = noErr;
-    
+    keyedUnarchiver.decodingFailurePolicy = NSDecodingFailurePolicyRaiseException;
+        
 bail:
     
-    return result;
+    return keyedUnarchiver;
 }
 
-//API interface
-// dump a btm file to stdout
-// path is optional, and if nil, will be found dynamically
-NSInteger dumpBTM(NSURL* path)
+//deserialize
+Storage* deserialize(NSURL* path)
 {
-    //result
-    NSInteger result = -1;
-            
-    //database storage obj
+    //'Storage' class
+    Class StorageClass = nil;
+    
+    //'Storage' object
     Storage* storage = nil;
     
     //unarchiver
     NSKeyedUnarchiver* keyedUnarchiver = nil;
+        
+    //lookup 'Storage' class
+    StorageClass = NSClassFromString(@"Storage");
+    if(nil == StorageClass)
+    {
+        //err msg
+        printf("ERROR: failed to find 'Storage' class\n\n");
+        
+        //bail
+        goto bail;
+    }
     
-    //item number
-    int itemNumber = 0;
-
-    //load
-    result = load(&path, &keyedUnarchiver);
-    if(result != noErr)
+    //load btm file
+    keyedUnarchiver = load(&path);
+    if(nil == keyedUnarchiver)
     {
         //err msg
         printf("ERROR: failed to open/load %s\n\n", path.path.UTF8String);
@@ -110,10 +131,10 @@ NSInteger dumpBTM(NSURL* path)
         
         //decode storage object
         // this in turn will decode all items
-        storage = [keyedUnarchiver decodeObjectOfClass:[Storage class] forKey:@"store"];
+        storage = [keyedUnarchiver decodeObjectOfClass:StorageClass forKey:@"store"];
     }
     //exception
-    @catch (NSException *exception) {
+    @catch(NSException *exception) {
         
         //err msg
         printf("ERROR: unserializing failed with %s\n\n", exception.description.UTF8String);
@@ -122,8 +143,50 @@ NSInteger dumpBTM(NSURL* path)
         goto bail;
     }
     
+    //sanity check
+    // iVar: 'itemsByUserIdentifier' and 'mdmPayloadsByIdentifier'
+    if( (YES != [storage respondsToSelector:@selector(itemsByUserIdentifier)]) ||
+        (YES != [storage respondsToSelector:@selector(mdmPayloadsByIdentifier)]) )
+    {
+        //err msg
+        printf("ERROR: failed to find 'Storage' class's 'itemsByUserIdentifier' or 'mdmPayloadsByIdentifier' instance variables\n\n");
+        
+        //unset
+        storage = nil;
+        
+        //bail
+        goto bail;
+    }
+    
+bail:
+    
+    return storage;
+}
+
+//API INTERFACE
+// dump a btm file to stdout
+// path is optional, and if nil, will be found dynamically
+NSInteger dumpBTM(NSURL* path)
+{
+    //result
+    NSInteger result = -1;
+    
+    //'Storage' object
+    Storage* storage = nil;
+    
+    //item #
+    int itemNumber = 0;
+    
+    //deserialze
+    storage = deserialize(path);
+    if(nil == storage)
+    {
+        //bail
+        goto bail;
+    }
+    
     //process each/all items
-    for(NSString* key in storage.items)
+    for(NSString* key in storage.itemsByUserIdentifier)
     {
         //uid
         uid_t uid = 0;
@@ -138,19 +201,36 @@ NSInteger dumpBTM(NSURL* path)
         printf("========================\n Records for UID %d : %s\n========================\n\n", uid, key.description.UTF8String);
         
         printf(" Items:\n\n");
-        
+    
         //process each item
-        items = storage.items[key];
+        items = storage.itemsByUserIdentifier[key];
         for(ItemRecord* item in items)
         {
+            //sanity check
+            if(YES != [item respondsToSelector:NSSelectorFromString(@"dumpVerboseDescription")])
+            {
+                //err msg
+                printf("ERROR: failed to find current 'ItemRecord' object's 'dumpVerboseDescription' method\n\n");
+                
+                //bail
+                goto bail;
+            }
+            
             //display number and item details.
             printf(" #%d\n", ++itemNumber);
-            printf(" %s\n", [[item dumpVerboseDescription] UTF8String]);
+            
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+            
+            printf(" %s\n", [[item performSelector:NSSelectorFromString(@"dumpVerboseDescription")] UTF8String]);
+            
+#pragma clang diagnostic pop
+            
         }
     }
-    
+
     //any mdm items?
-    if(0 != storage.mdmItems.count)
+    if(0 != storage.mdmPayloadsByIdentifier.count)
     {
         //reset
         itemNumber = 0;
@@ -158,38 +238,35 @@ NSInteger dumpBTM(NSURL* path)
         //dbg output
         printf("========================\n");
         printf("\n MDM Payloads:\n\n");
-    }
-    
-    //print out all mdm items
-    for(NSString* key in storage.mdmItems)
-    {
-        //item
-        NSDictionary* mdmItem = storage.mdmItems[key];
         
-        //print
-        printf("#%d: %s:\n%s\n", ++itemNumber, key.UTF8String, mdmItem.description.UTF8String);
+        //print out all mdm items
+        for(NSString* key in storage.mdmPayloadsByIdentifier)
+        {
+            //item
+            NSDictionary* mdmItem = storage.mdmPayloadsByIdentifier[key];
+            
+            //print
+            printf("#%d: %s:\n%s\n", ++itemNumber, key.UTF8String, mdmItem.description.UTF8String);
+        }
     }
     
+    //happy
+    result = noErr;
+
 bail:
     
     return result;
 }
 
-//API interface
+//API INTERFACE
 // parse a btm file into a dictionary
 // path is optional, and if nil, will be found dynamically
 NSDictionary* parseBTM(NSURL* path)
 {
-    //result
-    NSInteger result = -1;
-    
     //contents
     NSMutableDictionary* contents = nil;
-    
-    //unarchiver
-    NSKeyedUnarchiver* keyedUnarchiver = nil;
-    
-    //database storage obj
+
+    //'Storage' object
     Storage* storage = nil;
     
     //items
@@ -201,12 +278,12 @@ NSDictionary* parseBTM(NSURL* path)
     //init
     itemsByUserID = [NSMutableDictionary dictionary];
     
-    //load
-    result = load(&path, &keyedUnarchiver);
-    if(result != noErr)
+    //deserialze
+    storage = deserialize(path);
+    if(nil == storage)
     {
         //set error
-        contents[KEY_BTM_ERROR] = [NSNumber numberWithLong:result];
+        contents[KEY_BTM_ERROR] = [NSNumber numberWithLong:EFTYPE];
         
         //bail
         goto bail;
@@ -214,33 +291,10 @@ NSDictionary* parseBTM(NSURL* path)
     
     //set path
     contents[KEY_BTM_PATH] = path;
-    
-    //wrap unserialization
-    @try
-    {
-        //decode version
-        contents[KEY_BTM_VERSION] = [NSNumber numberWithInteger:[keyedUnarchiver decodeIntegerForKey:@"version"]];
-
-        //decode storage object
-        // this in turn will decode all items
-        storage = [keyedUnarchiver decodeObjectOfClass:[Storage class] forKey:@"store"];
-    }
-    //exception
-    @catch(NSException *exception)
-    {
-        //err msg
-        os_log_error(OS_LOG_DEFAULT, "ERROR: unserializing failed with %{public}@", exception);
-        
-        //set error
-        contents[KEY_BTM_ERROR] = [NSNumber numberWithLong:EFTYPE];
-    
-        //bail
-        goto bail;
-    }
 
     //process each/all items
     // key is the UUID (mapping to a uid)
-    for(NSString* key in storage.items)
+    for(NSString* key in storage.itemsByUserIdentifier)
     {
         //uid
         uid_t uid = 0;
@@ -255,10 +309,10 @@ NSDictionary* parseBTM(NSURL* path)
         uid = uidFromUUID(key);
         
         //process each item
-        for(ItemRecord* item in storage.items[key])
+        for(ItemRecord* item in storage.itemsByUserIdentifier[key])
         {
             //add item
-            [items addObject:[item toDictionary:storage.items[key]]];
+            [items addObject:toDictionary(item, storage.itemsByUserIdentifier[key])];
         }
         
         //add items
@@ -269,18 +323,18 @@ NSDictionary* parseBTM(NSURL* path)
     contents[KEY_BTM_ITEMS_BY_USER_ID] = itemsByUserID;
     
     //save MDM payloads
-    if(0 != storage.mdmItems.count)
+    if(0 != storage.mdmPayloadsByIdentifier.count)
     {
         //save
-        contents[KEY_BTM_MDM_PAYLOAD] = storage.mdmItems;
+        contents[KEY_BTM_MDM_PAYLOAD] = storage.itemsByUserIdentifier;
     }
     
 bail:
     
     return contents;
 }
-
-//get path of BTM file
+ 
+//get path of the latest BTM file
 // looks in "/private/var/db/com.apple.backgroundtaskmanagement/"
 NSURL* getPath(void)
 {
@@ -318,97 +372,12 @@ bail:
     return path;
 }
 
-@implementation Storage
+/* (helper) EXTENSION FUNCTIONS for ItemRecord object */
+/* ...can't extented ItemRecord class, as its defined in a daemon (vs. framework) */
 
-@synthesize items;
-
-+(BOOL)supportsSecureCoding
-{
-    return YES;
-}
-
-//decode object
--(id)initWithCoder:(NSCoder *)decoder
-{
-    if(self = [super init])
-    {
-        //supported classes
-        NSArray* itemClasses = @[[NSMutableDictionary class], [NSString class], [NSArray class], [NSNumber class], [ItemRecord class]];
-        
-        //decode items
-        // 'itemsByUserIdentifier'
-        self.items = [decoder decodeObjectOfClasses:[NSSet setWithArray:itemClasses] forKey:@"itemsByUserIdentifier"];
-        
-        //decode items
-        // 'mdmPaloadsByIdentifier'
-        self.mdmItems = [decoder decodeObjectOfClasses:[NSSet setWithArray:itemClasses] forKey:@"mdmPaloadsByIdentifier"];
-    }
-    
-    //TODO:
-    // "userSettingsByUserIdentifier"
-    
-    return self;
-}
-
--(void)encodeWithCoder:(nonnull NSCoder *)coder {
- 
-    return;
-}
-
-@end
-
-@implementation ItemRecord
-
-+(BOOL)supportsSecureCoding
-{
-    return YES;
-}
-
-//decode object
--(id)initWithCoder:(NSCoder *)decoder
-{
-    self = [super init];
-    if(nil != self)
-    {
-        self.uuid = [decoder decodeObjectOfClass:[NSUUID class] forKey:@"uuid"];
-        self.identifier = [decoder decodeObjectOfClass:[NSString class] forKey:@"identifier"];
-        self.generation = [decoder decodeIntegerForKey:@"generation"];
-        self.url = [decoder decodeObjectOfClass:[NSURL class] forKey:@"url"];
-        self.executablePath = [decoder decodeObjectOfClass:[NSString class] forKey:@"executablePath"];
-        self.name = [decoder decodeObjectOfClass:[NSString class] forKey:@"name"];
-        self.developerName = [decoder decodeObjectOfClass:[NSString class] forKey:@"developerName"];
-        self.teamIdentifier = [decoder decodeObjectOfClass:[NSString class] forKey:@"teamIdentifier"];
-        self.lightweightRequirement = [decoder decodeObjectOfClass:[NSData class] forKey:@"lightweightRequirement"];
-        self.type = [decoder decodeIntegerForKey:@"type"];
-        self.disposition = [decoder decodeIntegerForKey:@"disposition"];
-        self.bookmark = [decoder decodeObjectOfClass:[NSData class] forKey:@"bookmark"];
-        self.bundleIdentifier = [decoder decodeObjectOfClass:[NSString class] forKey:@"bundleIdentifier"];
-        self.associatedBundleIdentifiers = [decoder decodeObjectOfClasses:[NSSet setWithArray:@[[NSArray class], [NSString class]]] forKey:@"associatedBundleIdentifiers"];
-    
-        self.container = [decoder decodeObjectOfClass:[NSString class] forKey:@"container"];
-        
-        NSArray* itemsArray = [decoder decodeArrayOfObjectsOfClass:[NSString class] forKey:@"items"];
-        if(nil != itemsArray)
-        {
-            self.items = [NSMutableSet setWithArray:itemsArray];
-        }
-        else
-        {
-            self.items = [NSMutableSet set];
-        }
-    }
-
-    return self;
-}
-
--(void)encodeWithCoder:(nonnull NSCoder *)coder {
- 
-    return;
-}
-
-//convert item record's type to string
-// TODO: handle more types (e.g. managaged?)
--(NSString *)typeDetails
+//helper function
+//convert Item Record's type to string
+NSString* typeDetails(ItemRecord* record)
 {
     //details
     NSMutableString* details = nil;
@@ -417,43 +386,43 @@ bail:
     details = [NSMutableString string];
     
     //curated
-    if(self.type & 0x80000)
+    if(record.type & 0x80000)
     {
         [details appendString:@"curated "];
     }
     
     //legacy
-    if(self.type & 0x10000)
+    if(record.type & 0x10000)
     {
         [details appendString:@"legacy "];
     }
     
     //developer
-    if(self.type & 0x20)
+    if(record.type & 0x20)
     {
         [details appendString:@"developer "];
     }
     
     //daemon
-    if(self.type & 0x10)
+    if(record.type & 0x10)
     {
         [details appendString:@"daemon "];
     }
     
     //agent
-    if(self.type & 0x8)
+    if(record.type & 0x8)
     {
         [details appendString:@"agent "];
     }
     
     //login item
-    if(self.type & 0x4)
+    if(record.type & 0x4)
     {
         [details appendString:@"login item "];
     }
     
     //app
-    if(self.type & 0x2)
+    if(record.type & 0x2)
     {
         [details appendString:@"app "];
     }
@@ -461,8 +430,43 @@ bail:
     return details;
 }
 
-//convert item record's disposition to string
--(NSString *)dispositionDetails
+//helper function
+// find parent of ItemRecord, via ID
+ItemRecord* findParent(ItemRecord* record, NSArray* items)
+{
+    //parent
+    ItemRecord* parent = nil;
+    
+    //find parent
+    for(ItemRecord* item in items)
+    {
+        //not a parent?
+        if(nil == item.identifier)
+        {
+            //skip
+            continue;
+        }
+        
+        //no match
+        if(YES != [item.identifier isEqualToString:record.container])
+        {
+            continue;
+        }
+    
+        //match
+        // save parent
+        parent = item;
+        
+        //done
+        break;
+    }
+
+    return parent;
+}
+
+//helper function
+//convert ItemRecord disposition to string
+NSString* dispositionDetails(ItemRecord* record)
 {
     //details
     NSMutableString* details = nil;
@@ -471,7 +475,7 @@ bail:
     details = [NSMutableString string];
     
     //enabled
-    if(self.disposition & 0x1)
+    if(record.disposition & 0x1)
     {
         [details appendString:@"enabled "];
     }
@@ -482,7 +486,7 @@ bail:
     }
     
     //allowed
-    if(self.disposition & 0x2)
+    if(record.disposition & 0x2)
     {
         [details appendString:@"allowed "];
     }
@@ -493,7 +497,7 @@ bail:
     }
     
     //hidden
-    if(self.disposition & 0x4)
+    if(record.disposition & 0x4)
     {
         [details appendString:@"hidden "];
     }
@@ -504,7 +508,7 @@ bail:
     }
     
     //notified
-    if(self.disposition & 0x8)
+    if(record.disposition & 0x8)
     {
         [details appendString:@"notified"];
     }
@@ -517,9 +521,10 @@ bail:
     return details;
 }
 
-//convert to a dictionary
-// with additional logic to extract plist/exe paths
--(NSDictionary*)toDictionary:(NSArray*)items
+//helper function
+// convert ItemRecord to a dictionary
+// w/ additional logic to extract plist/exe paths
+NSDictionary* toDictionary(ItemRecord* record, NSArray* items)
 {
     //item
     NSMutableDictionary* item = nil;
@@ -540,59 +545,59 @@ bail:
     item = [NSMutableDictionary dictionary];
     
     //uuid
-    item[KEY_BTM_ITEM_UUID] = self.uuid;
+    item[KEY_BTM_ITEM_UUID] = record.uuid;
     
     //name
-    item[KEY_BTM_ITEM_NAME] = self.name;
+    item[KEY_BTM_ITEM_NAME] = record.name;
     
     //dev
-    item[KEY_BTM_ITEM_DEV_NAME] = self.developerName;
+    item[KEY_BTM_ITEM_DEV_NAME] = record.developerName;
     
     //team id
-    if(nil != self.teamIdentifier)
+    if(nil != record.teamIdentifier)
     {
-        item[KEY_BTM_ITEM_TEAM_ID] = self.teamIdentifier;
+        item[KEY_BTM_ITEM_TEAM_ID] = record.teamIdentifier;
     }
     
     //type
-    item[KEY_BTM_ITEM_TYPE] = [NSNumber numberWithLong:(long)self.type];
+    item[KEY_BTM_ITEM_TYPE] = [NSNumber numberWithLong:(long)record.type];
     
     //type description
-    item[KEY_BTM_ITEM_TYPE_DETAILS] = [self typeDetails];
+    item[KEY_BTM_ITEM_TYPE_DETAILS] = typeDetails(record);
     
     //disposition
-    item[KEY_BTM_ITEM_DISPOSITION] = [NSNumber numberWithLong:(long)self.disposition];
+    item[KEY_BTM_ITEM_DISPOSITION] = [NSNumber numberWithLong:(long)record.disposition];
     
     //disposition details
-    item[KEY_BTM_ITEM_DISPOSITION_DETAILS] = [self dispositionDetails];
+    item[KEY_BTM_ITEM_DISPOSITION_DETAILS] = dispositionDetails(record);
     
     //identifier
-    item[KEY_BTM_ITEM_ID] = self.identifier;
+    item[KEY_BTM_ITEM_ID] = record.identifier;
     
     //url
-    item[KEY_BTM_ITEM_URL] = self.url;
+    item[KEY_BTM_ITEM_URL] = record.url;
     
     //path
-    item[KEY_BTM_ITEM_EXE_PATH] = self.executablePath;
+    item[KEY_BTM_ITEM_EXE_PATH] = record.executablePath;
     
     //generation
-    item[KEY_BTM_ITEM_GENERATION] = [NSNumber numberWithLong:(long)self.generation];
+    item[KEY_BTM_ITEM_GENERATION] = [NSNumber numberWithLong:(long)record.generation];
     
     //bundle id
-    if(nil != self.bundleIdentifier)
+    if(nil != record.bundleIdentifier)
     {
         //add
-        item[KEY_BTM_ITEM_BUNDLE_ID] = self.bundleIdentifier;
+        item[KEY_BTM_ITEM_BUNDLE_ID] = record.bundleIdentifier;
     }
 
     //associated bundle ids
-    if(0 != self.associatedBundleIdentifiers.count)
+    if(0 != record.associatedBundleIdentifiers.count)
     {
         //init
         bundleIDs = [NSMutableArray array];
         
         //add each
-        for(NSString* associatedBundleIdentifier in self.associatedBundleIdentifiers)
+        for(NSString* associatedBundleIdentifier in record.associatedBundleIdentifiers)
         {
             //add
             [bundleIDs addObject:associatedBundleIdentifier];
@@ -602,20 +607,20 @@ bail:
     }
     
     //parent
-    if(0 != self.container.length)
+    if(0 != record.container.length)
     {
         //add
-        item[KEY_BTM_ITEM_PARENT_ID] = self.container;
+        item[KEY_BTM_ITEM_PARENT_ID] = record.container;
     }
     
     //items
-    if(0 != self.items.count)
+    if(0 != record.embeddedItems.count)
     {
         //init
         embeddedItems = [NSMutableArray array];
         
         //add each
-        for(NSString* item in self.items.allObjects)
+        for(NSString* item in record.embeddedItems.allObjects)
         {
             //add
             [embeddedItems addObject:item];
@@ -628,26 +633,26 @@ bail:
     //agents/daemons
     // path: already set
     // plist: is in 'url'
-    if( (self.type & 0x8) ||
-        (self.type & 0x10) )
+    if( (record.type & 0x8) ||
+        (record.type & 0x10) )
     {
         //set plist
-        if(nil != self.url)
+        if(nil != record.url)
         {
             //plist
-            item[KEY_BTM_ITEM_PLIST_PATH] = self.url.path;
+            item[KEY_BTM_ITEM_PLIST_PATH] = record.url.path;
         }
     }
     
     //login item
     // path: construct via parent
-    else if(self.type & 0x4)
+    else if(record.type & 0x4)
     {
         //find parent
-        parent = [self findParent:items];
+        parent = findParent(record, items);
         if(nil != parent)
         {
-            bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@%@", parent.url.path, self.url.path]];
+            bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@%@", parent.url.path, record.url.path]];
         }
         
         //add exe path
@@ -661,10 +666,10 @@ bail:
     //app
     // path to app bundle is in url
     // ...load bundle to get exe path
-    else if(self.type & 0x2)
+    else if(record.type & 0x2)
     {
         //load bundle from app path
-        bundle = [NSBundle bundleWithPath:self.url.path];
+        bundle = [NSBundle bundleWithPath:record.url.path];
         
         //add exe path
         if(nil != bundle.executablePath)
@@ -676,134 +681,6 @@ bail:
 
     return item;
 }
-
-//dump
-// build a string for output
--(NSString *)dumpVerboseDescription {
-    
-    //desc
-    NSMutableString* description = nil;
-    
-    //init
-    description = [NSMutableString string];
-    
-    //build description
-    [description appendFormat:@" UUID:              %@\r\n", self.uuid];
-    [description appendFormat:@"  Name:              %@\r\n", self.name];
-    [description appendFormat:@"  Developer Name:    %@\r\n", self.developerName];
-    
-    //team id
-    if(nil != self.teamIdentifier)
-    {
-        [description appendFormat:@"  Team Identifier:   %@\r\n", self.teamIdentifier];
-    }
-    
-    //type
-    [description appendFormat:@"  Type:              %@ (%#lx)\n", [self typeDetails], (long)self.type];
-    
-    //disposition
-    [description appendFormat:@"  Disposition:       [%@] (%ld)\n", [self dispositionDetails], (long)self.disposition];
-    
-    //id
-    [description appendFormat:@"  Identifier:       %@\r\n", self.identifier];
-    
-    //url
-    [description appendFormat:@"  URL:               %@\n", self.url];
-    
-    //path
-    [description appendFormat:@"  Executable Path:   %@\n", self.executablePath];
-    
-    //generation
-    [description appendFormat:@"  Generation:        %ld\n", self.generation];
-    
-    //bundle id
-    if(nil != self.bundleIdentifier)
-    {
-        //add
-        [description appendFormat:@"  Bundle Identifier: %@\n", self.bundleIdentifier];
-    }
-    
-    //associated bundle ids
-    if(0 != self.associatedBundleIdentifiers.count)
-    {
-        [description appendFormat:@"  Assoc. Bundle IDs: "];
-        [description appendString:@"["];
-        
-        for(NSString* associatedBundleIdentifier in self.associatedBundleIdentifiers)
-        {
-            [description appendFormat:@"%@ ", associatedBundleIdentifier];
-        }
-        
-        //remove last " "
-        if(YES == [[description substringFromIndex:[description length] - 1] isEqualToString:@" "])
-        {
-            description = [[description substringToIndex:[description length]-1] mutableCopy];
-        }
-    
-        [description appendString:@"]\n"];
-    }
-    
-    //parent id
-    if(nil != self.container)
-    {
-        //add
-        [description appendFormat:@"  Parent Identifier: %@\n", self.container];
-    }
-    
-    //embedded items
-    if(0 != self.items.count)
-    {
-        //count
-        int count = 0;
-        
-        //add identifiers
-        [description appendFormat:@"  Embedded Item Identifiers:"];
-        for(NSString* item in self.items.allObjects)
-        {
-            [description appendFormat:@"\n    #%d: %@", ++count, item];
-        }
-        [description appendString:@"\n"];
-    }
-    
-    return description;
-}
-
-//helper function
-// find parent, via ID
--(ItemRecord*)findParent:(NSArray*)items
-{
-    //parent
-    ItemRecord* parent = nil;
-    
-    //find parent
-    for(ItemRecord* item in items)
-    {
-        //not a parent?
-        if(nil == item.identifier)
-        {
-            //skip
-            continue;
-        }
-        
-        //no match
-        if(YES != [item.identifier isEqualToString:self.container])
-        {
-            continue;
-        }
-    
-        //match
-        // save parent
-        parent = item;
-        
-        //done
-        break;
-    }
-
-    return parent;
-}
-
-@end
-
 
 //helper function
 //get a UID from a UUID
@@ -847,3 +724,4 @@ uid_t uidFromUUID(NSString* uuid)
     
     return uid;
 }
+
